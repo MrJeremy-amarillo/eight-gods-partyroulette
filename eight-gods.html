@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>派對輪盤</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; text-align: center; }
+        .tab-container { display: flex; background: #fff; border-bottom: 1px solid #ddd; }
+        .tab { flex: 1; padding: 15px; font-size: 18px; font-weight: bold; color: #555; cursor: pointer; }
+        .tab.active { color: #007aff; border-bottom: 3px solid #007aff; }
+        .content { display: none; padding: 20px; }
+        .content.active { display: block; }
+        .btn { background: #007aff; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 18px; font-weight: bold; width: 80%; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn:active { transform: scale(0.98); }
+        .result-box { margin-top: 20px; padding: 15px; background: white; border-radius: 10px; font-size: 18px; min-height: 50px; font-weight: bold; color: #333;}
+        .secret-panel { margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 12px; color: #999; }
+        input[type="text"] { padding: 10px; width: 70%; border-radius: 5px; border: 1px solid #ccc; font-size: 16px;}
+    </style>
+</head>
+<body>
+
+    <div class="tab-container">
+        <div class="tab active" onclick="switchTab('grouping')">分組抽籤</div>
+        <div class="tab" onclick="switchTab('penalty')">懲罰輪盤</div>
+    </div>
+
+    <div id="grouping" class="content active">
+        <h2>好友分組產生器</h2>
+        <p>預設名單：阿明, 小華, 壽星A, 壽星B, 阿榮, 小傑, 婷婷, 玲玲</p>
+        <button class="btn" onclick="generateGroups()">開始分組！</button>
+        <div id="groupResult" class="result-box">等待分組...</div>
+        
+        <div class="secret-panel">
+            <p>🤫 暗箱設定</p>
+            <label><input type="checkbox" id="riggedMode" checked> 啟用壽星保護機制</label><br>
+            <small>內定同組：壽星A、壽星B、阿榮</small>
+        </div>
+    </div>
+
+    <div id="penalty" class="content">
+        <h2>命運懲罰輪盤</h2>
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="newPenalty" placeholder="輸入新懲罰...">
+            <button onclick="addPenalty()" style="padding: 10px;">新增</button>
+        </div>
+        <p id="penaltyList" style="font-size: 14px; color: #666;">目前選項: 喝一杯, 彈額頭, 真心話</p>
+        
+        <button class="btn" style="background:#ff3b30;" onclick="spinPenalty()">旋轉抽出懲罰！</button>
+        <div id="penaltyResult" class="result-box" style="color: #ff3b30; font-size: 24px;">等待抽取...</div>
+    </div>
+
+    <script>
+        // 切換分頁邏輯
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // 分組暗箱邏輯
+        function generateGroups() {
+            const resultBox = document.getElementById('groupResult');
+            resultBox.innerHTML = "分組計算中... 🎲";
+            
+            setTimeout(() => {
+                const isRigged = document.getElementById('riggedMode').checked;
+                let group1 = [], group2 = [];
+                let others = ["阿明", "小華", "小傑", "婷婷", "玲玲"];
+                
+                // 隨機打亂其他人的順序
+                others.sort(() => Math.random() - 0.5);
+
+                if (isRigged) {
+                    // 暗箱操作：壽星跟指定人員強迫進入第一組
+                    group1 = ["壽星A", "壽星B", "阿榮", others.pop()]; 
+                    group2 = others; // 剩下的人去第二組
+                } else {
+                    // 正常隨機：所有人混在一起重抽
+                    let all = ["阿明", "小華", "壽星A", "壽星B", "阿榮", "小傑", "婷婷", "玲玲"].sort(() => Math.random() - 0.5);
+                    group1 = all.slice(0, 4);
+                    group2 = all.slice(4, 8);
+                }
+
+                resultBox.innerHTML = `
+                    <div style="color:blue; margin-bottom:10px;"><b>🔵 第一組：</b><br>${group1.join(', ')}</div>
+                    <div style="color:green;"><b>🟢 第二組：</b><br>${group2.join(', ')}</div>
+                `;
+            }, 800); // 假裝思考 0.8 秒
+        }
+
+        // 懲罰選項邏輯
+        let penalties = ["喝一杯", "彈額頭", "真心話"];
+        
+        function addPenalty() {
+            const input = document.getElementById('newPenalty');
+            if (input.value.trim() !== "") {
+                penalties.push(input.value.trim());
+                document.getElementById('penaltyList').innerText = "目前選項: " + penalties.join(', ');
+                input.value = "";
+            }
+        }
+
+        function spinPenalty() {
+            const resultBox = document.getElementById('penaltyResult');
+            resultBox.innerHTML = "旋轉中... ⏳";
+            
+            // 模擬動畫感，0.8秒後出結果
+            setTimeout(() => {
+                const randomIndex = Math.floor(Math.random() * penalties.length);
+                resultBox.innerHTML = "💥 " + penalties[randomIndex] + " 💥";
+            }, 800);
+        }
+    </script>
+</body>
+</html>
