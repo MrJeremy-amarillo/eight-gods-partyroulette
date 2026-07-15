@@ -159,7 +159,7 @@
 
             <!-- 暗箱設定區 -->
             <div id="secretPanel">
-                <h3>🤫 想不到我們偷偷來吧!</h3>
+                <h3>🤫 緣分保護機制</h3>
                 <p style="font-size:12px; margin:0 0 15px 0; color:#ccc;">勾選的人保證會被分在同一組</p>
                 <div id="secretCheckboxes" class="secret-options"></div>
                 
@@ -386,14 +386,38 @@
 
         /* ================= 懲罰輪盤邏輯 ================= */
         
-        let penalties = [
+        const DEFAULT_PENALTIES = [
             { text: "喝一杯", limit: -1 },
             { text: "大冒險", limit: -1 },
             { text: "彈額頭", limit: -1 },
             { text: "真心話", limit: -1 }
         ];
 
+        let penalties = [];
+
+        // 讀取本地儲存的選項
+        function loadPenalties() {
+            const saved = localStorage.getItem('partyRoulettePenalties');
+            if (saved) {
+                try {
+                    penalties = JSON.parse(saved);
+                } catch (e) {
+                    penalties = JSON.parse(JSON.stringify(DEFAULT_PENALTIES));
+                }
+            } else {
+                penalties = JSON.parse(JSON.stringify(DEFAULT_PENALTIES));
+            }
+        }
+
+        // 儲存選項到手機本地
+        function savePenalties() {
+            localStorage.setItem('partyRoulettePenalties', JSON.stringify(penalties));
+        }
+
         function renderWheelAndList() {
+            // 每次重新渲染畫面時，自動觸發存檔，確保資料絕對不遺失
+            savePenalties();
+
             const listEl = document.getElementById('penaltyList');
             listEl.innerHTML = '';
             
@@ -559,6 +583,7 @@
         }
 
         // 啟動！
+        loadPenalties(); // 啟動前先讀取手機裡的記憶
         renderWheelAndList();
 
     </script>
