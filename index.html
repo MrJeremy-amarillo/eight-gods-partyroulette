@@ -2,7 +2,6 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- user-scalable=no 防止手機點擊輸入框時畫面放大縮小 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>派對輪盤</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -34,7 +33,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* 通用按鈕與輸入框 */
-        .btn { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-size: 16px; font-weight: bold; width: 100%; margin-top: 15px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: 0.2s; }
+        .btn { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-size: 16px; font-weight: bold; width: 100%; margin-top: 15px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: 0.2s; cursor: pointer;}
         .btn:active { transform: scale(0.96); }
         .btn-danger { background: var(--danger); box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); }
         
@@ -55,7 +54,7 @@
         .group-card h3 { margin: 0 0 10px 0; color: var(--primary); }
         .group-card span { display: inline-block; background: white; padding: 5px 12px; border-radius: 20px; border: 1px solid #ddd; margin: 0 5px 5px 0; font-weight: 500;}
 
-        /* 暗箱設定面板 (預設隱藏) */
+        /* 暗箱設定面板 */
         #secretPanel { background: #333; color: white; border-radius: 12px; padding: 15px; margin-top: 15px; display: none; text-align: left; animation: fadeIn 0.3s ease; }
         #secretPanel h3 { margin-top: 0; color: #ffcc00; font-size: 16px; }
         .secret-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -71,7 +70,7 @@
         .wheel {
             width: 100%; height: 100%; border-radius: 50%; border: 4px solid white;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            transition: transform 4s cubic-bezier(0.17, 0.67, 0.1, 1); /* 流暢減速動畫 */
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.1, 1);
             transform: rotate(0deg);
         }
         .wheel-center {
@@ -81,15 +80,20 @@
         
         /* 懲罰清單樣式 */
         .penalty-list { text-align: left; margin-top: 20px; }
-        .penalty-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
-        .delete-btn { background: #ffebee; color: var(--danger); border: none; padding: 5px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .penalty-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .delete-btn { background: #ffebee; color: var(--danger); border: none; padding: 8px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; flex-shrink: 0;}
         
+        /* 直接編輯清單的輸入框 */
+        .edit-penalty-input { border: none !important; background: transparent !important; font-size: 15px !important; width: 100%; margin: 0 8px !important; padding: 4px 0 !important; border-bottom: 1px dashed #ccc !important; outline: none; border-radius: 0 !important; font-weight: 500;}
+        .edit-penalty-input:focus { border-bottom: 1px solid var(--primary) !important; }
+        .edit-limit-select { padding: 4px; border-radius: 6px; border: 1px solid #ddd; margin-right: 8px; font-size: 13px; background: #fff; flex-shrink: 0;}
+
         /* 彈出結果視窗 */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: 0.3s; }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 80%; text-align: center; transform: scale(0.8); transition: 0.3s; }
         .modal.show { display: flex; opacity: 1; }
         .modal.show .modal-content { transform: scale(1); }
-        .modal-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: var(--danger); }
+        .modal-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: var(--danger); white-space: pre-line;}
     </style>
 </head>
 <body>
@@ -103,7 +107,7 @@
     <div id="grouping" class="content active">
         
         <div class="card" id="step1">
-            <h2 id="groupTitle">好友分組產生器</h2>
+            <h2 style="user-select: none;">好友分組產生器</h2>
             <p style="color:var(--text-sub); font-size:14px;">請先輸入這次參與的總人數</p>
             <input type="number" id="peopleCount" placeholder="例如：8" pattern="[0-9]*">
             <button class="btn" onclick="generateNameInputs()">建立名單</button>
@@ -112,12 +116,11 @@
         <div class="card" id="step2" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
                 <h3 id="secretTrigger" style="margin:0; user-select: none;">好友分組產生器</h3>
-                <button onclick="resetSetup()" style="background:none; border:none; color:var(--primary); font-size:14px;">重新設定人數</button>
+                <button onclick="resetSetup()" style="background:none; border:none; color:var(--primary); font-size:14px; padding: 5px;">重新設定人數</button>
             </div>
             
-            <div id="nameInputsContainer" class="name-grid">
-                <!-- 這裡會動態產生輸入框 -->
-            </div>
+            <!-- 名單輸入區 -->
+            <div id="nameInputsContainer" class="name-grid"></div>
             
             <div style="margin-top:20px; border-top: 1px solid #eee; padding-top:15px;">
                 <p style="margin:0 0 10px 0; text-align:left; font-weight:bold;">要分成幾組？</p>
@@ -125,13 +128,11 @@
                 <button class="btn" onclick="executeGrouping()">🎲 開始隨機分組</button>
             </div>
 
-            <!-- 暗箱設定區 (預設隱藏，點擊標題3次開啟) -->
+            <!-- 暗箱設定區 -->
             <div id="secretPanel">
-                <h3>🤫 壽星/特定人物保護機制</h3>
-                <p style="font-size:12px; margin:0 0 10px 0; color:#ccc;">勾選的人保證會被分在【第一組】</p>
-                <div id="secretCheckboxes" class="secret-options">
-                    <!-- 這裡會動態抓取名字生成勾選框 -->
-                </div>
+                <h3>🤫 壽星保護機制</h3>
+                <p style="font-size:12px; margin:0 0 10px 0; color:#ccc;">勾選的位置保證會被分在【第一組】</p>
+                <div id="secretCheckboxes" class="secret-options"></div>
             </div>
         </div>
 
@@ -142,21 +143,27 @@
     <div id="penalty" class="content">
         <div class="card">
             <h2>命運懲罰輪盤</h2>
-            
             <div class="wheel-container">
                 <div class="pointer"></div>
                 <div class="wheel-center"></div>
                 <div class="wheel" id="wheel"></div>
             </div>
-            
             <button class="btn btn-danger" onclick="spinWheel()" id="spinBtn">開始旋轉！</button>
         </div>
 
         <div class="card">
             <h3 style="margin-top:0; text-align:left;">設定懲罰選項</h3>
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="newPenalty" placeholder="輸入新選項...">
-                <button class="btn" style="margin-top:0; width:80px; padding: 12px 10px;" onclick="addPenalty()">新增</button>
+            
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="newPenalty" placeholder="輸入新選項..." style="flex:1;">
+                <select id="newPenaltyLimit" style="padding: 12px 5px; border-radius: 10px; border: 1px solid #ddd; background: #fff;">
+                    <option value="-1">無限次</option>
+                    <option value="1">1 次</option>
+                    <option value="2">2 次</option>
+                    <option value="3">3 次</option>
+                    <option value="5">5 次</option>
+                </select>
+                <button class="btn" style="margin-top:0; width:70px; padding: 12px 10px;" onclick="addPenalty()">新增</button>
             </div>
             
             <div class="penalty-list" id="penaltyList">
@@ -165,7 +172,7 @@
         </div>
     </div>
 
-    <!-- 彈出視窗 (用於顯示輪盤結果) -->
+    <!-- 彈出視窗 -->
     <div class="modal" id="resultModal">
         <div class="modal-content">
             <div class="modal-title" id="modalResultText"></div>
@@ -183,16 +190,15 @@
         }
 
         /* ================= 分組抽籤邏輯 ================= */
-        
-        // 隱藏的連點觸發器
         let clickCount = 0;
         let clickTimer;
+        // 追蹤「被勾選的輸入框索引」，這樣使用者改名字也不會影響暗箱綁定
+        let secretIndices = new Set(); 
         
         document.getElementById('secretTrigger').addEventListener('click', () => {
             clickCount++;
             clearTimeout(clickTimer);
             if (clickCount >= 3) {
-                // 連點3次，開啟/關閉暗箱，並更新名單
                 const panel = document.getElementById('secretPanel');
                 if (panel.style.display === 'block') {
                     panel.style.display = 'none';
@@ -206,17 +212,15 @@
             }
         });
 
-        // 產生名字輸入框
         function generateNameInputs() {
             const count = parseInt(document.getElementById('peopleCount').value);
             if (!count || count < 2) { alert("人數至少要 2 人喔！"); return; }
             
             const container = document.getElementById('nameInputsContainer');
             container.innerHTML = '';
+            secretIndices.clear(); // 重新設定人數時清空暗箱綁定
             
-            // 給幾個預設的假名字，方便不用全部自己打
             const defaultNames = ["阿明", "小華", "阿榮", "小傑", "婷婷", "玲玲", "小胖", "美美"];
-            
             for (let i = 0; i < count; i++) {
                 let defaultName = (i < defaultNames.length) ? defaultNames[i] : `成員 ${i+1}`;
                 container.innerHTML += `<input type="text" class="member-name" value="${defaultName}">`;
@@ -225,7 +229,7 @@
             document.getElementById('step1').style.display = 'none';
             document.getElementById('step2').style.display = 'block';
             document.getElementById('groupResult').innerHTML = '';
-            document.getElementById('secretPanel').style.display = 'none'; // 重設時隱藏暗箱
+            document.getElementById('secretPanel').style.display = 'none';
         }
 
         function resetSetup() {
@@ -234,7 +238,6 @@
             document.getElementById('groupResult').innerHTML = '';
         }
 
-        // 根據目前的輸入框更新暗箱選項
         function updateSecretCheckboxes() {
             const inputs = document.querySelectorAll('.member-name');
             const container = document.getElementById('secretCheckboxes');
@@ -242,59 +245,61 @@
             
             inputs.forEach((input, index) => {
                 const name = input.value.trim() || `成員 ${index+1}`;
+                const isChecked = secretIndices.has(index) ? 'checked' : '';
                 container.innerHTML += `
                     <label>
-                        <input type="checkbox" value="${name}" class="rigged-target"> ${name}
+                        <input type="checkbox" onchange="toggleSecret(${index}, this.checked)" ${isChecked}> ${name}
                     </label>
                 `;
             });
         }
 
-        // 執行分組 (包含暗箱演算法)
+        function toggleSecret(index, isChecked) {
+            if(isChecked) secretIndices.add(index);
+            else secretIndices.delete(index);
+        }
+
         function executeGrouping() {
             const inputs = document.querySelectorAll('.member-name');
-            let allNames = Array.from(inputs).map((input, idx) => input.value.trim() || `成員 ${idx+1}`);
-            const numGroups = parseInt(document.getElementById('groupCount').value);
+            // 將每個人綁定他們的 index 索引，以核對暗箱
+            let allNames = Array.from(inputs).map((input, idx) => ({ 
+                name: input.value.trim() || `成員 ${idx+1}`, 
+                index: idx 
+            }));
             
+            const numGroups = parseInt(document.getElementById('groupCount').value);
             if (numGroups < 2 || numGroups > allNames.length) {
                 alert("組數設定錯誤！"); return;
             }
 
-            // 取得被勾選的內定人員
-            const riggedCheckboxes = document.querySelectorAll('.rigged-target:checked');
-            let riggedNames = Array.from(riggedCheckboxes).map(cb => cb.value);
-            let isRigged = document.getElementById('secretPanel').style.display === 'block' && riggedNames.length > 0;
-
-            // 初始化組別陣列 [ [], [], ... ]
             let groups = Array.from({length: numGroups}, () => []);
 
-            if (isRigged) {
-                // 1. 暗箱：先把被勾選的人通通塞進第一組 (索引 0)
-                riggedNames.forEach(name => {
-                    // 確保名字真的在名單裡
-                    if (allNames.includes(name)) {
-                        groups[0].push(name);
-                        // 從總名單中剔除這些人
-                        allNames = allNames.filter(n => n !== name);
+            // 1. 暗箱：處理被勾選的索引
+            if (secretIndices.size > 0) {
+                allNames.forEach(item => {
+                    if (secretIndices.has(item.index)) {
+                        groups[0].push(item.name);
                     }
                 });
+                // 把已經分到第一組的人從名單中剔除
+                allNames = allNames.filter(item => !secretIndices.has(item.index));
             }
 
             // 2. 隨機打亂剩下的人
             allNames.sort(() => 0.5 - Math.random());
 
             // 3. 將剩下的人平均分配到人數最少的組別
-            allNames.forEach(name => {
+            allNames.forEach(item => {
                 let minGroupIndex = 0;
                 for(let i = 1; i < numGroups; i++) {
                     if (groups[i].length < groups[minGroupIndex].length) {
                         minGroupIndex = i;
                     }
                 }
-                groups[minGroupIndex].push(name);
+                groups[minGroupIndex].push(item.name);
             });
 
-            // 4. 繪製結果 UI
+            // 4. 繪製結果
             const resultBox = document.getElementById('groupResult');
             resultBox.innerHTML = '';
             const colors = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30'];
@@ -308,13 +313,17 @@
                 resultBox.innerHTML += html;
             });
             
-            // 滾動到底部看結果
             setTimeout(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }, 100);
         }
 
         /* ================= 懲罰輪盤邏輯 ================= */
-        
-        let penalties = ["喝一杯", "彈額頭", "真心話", "伏地挺身", "請客"];
+        // 選項包含 text 和 limit (-1 代表無限次)
+        let penalties = [
+            {text: "喝一杯", limit: -1}, 
+            {text: "彈額頭", limit: -1}, 
+            {text: "真心話", limit: -1},
+            {text: "請客", limit: 1}
+        ];
         const colors = ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#8338EC', '#FF9F1C'];
         
         const wheel = document.getElementById('wheel');
@@ -322,19 +331,27 @@
         let isSpinning = false;
 
         function renderWheelAndList() {
-            // 繪製列表
             const listEl = document.getElementById('penaltyList');
             listEl.innerHTML = '';
+            
             penalties.forEach((item, index) => {
+                const limitText = item.limit === -1 ? '無限' : `${item.limit}次`;
                 listEl.innerHTML += `
                     <div class="penalty-item">
-                        <span><span style="color:${colors[index % colors.length]}; font-size:20px;">●</span> ${item}</span>
+                        <span style="color:${colors[index % colors.length]}; font-size:20px; flex-shrink: 0;">●</span>
+                        <input type="text" class="edit-penalty-input" value="${item.text}" onchange="editPenaltyText(${index}, this.value)">
+                        <select onchange="editPenaltyLimit(${index}, this.value)" class="edit-limit-select">
+                            <option value="-1" ${item.limit === -1 ? 'selected' : ''}>無限</option>
+                            <option value="1" ${item.limit === 1 ? 'selected' : ''}>1次</option>
+                            <option value="2" ${item.limit === 2 ? 'selected' : ''}>2次</option>
+                            <option value="3" ${item.limit === 3 ? 'selected' : ''}>3次</option>
+                            <option value="5" ${item.limit === 5 ? 'selected' : ''}>5次</option>
+                        </select>
                         <button class="delete-btn" onclick="removePenalty(${index})">刪除</button>
                     </div>
                 `;
             });
 
-            // 繪製圓形輪盤 (使用 CSS conic-gradient)
             if (penalties.length === 0) {
                 wheel.style.background = '#ddd';
                 return;
@@ -342,7 +359,6 @@
 
             const sliceAngle = 360 / penalties.length;
             let gradientParts = [];
-            
             for (let i = 0; i < penalties.length; i++) {
                 const startAngle = i * sliceAngle;
                 const endAngle = (i + 1) * sliceAngle;
@@ -351,11 +367,24 @@
             wheel.style.background = `conic-gradient(${gradientParts.join(', ')})`;
         }
 
+        // 編輯文字與次數
+        function editPenaltyText(index, newText) {
+            if (newText.trim() !== "") penalties[index].text = newText.trim();
+        }
+        function editPenaltyLimit(index, newLimit) {
+            penalties[index].limit = parseInt(newLimit);
+        }
+
         function addPenalty() {
             const input = document.getElementById('newPenalty');
+            const limitSelect = document.getElementById('newPenaltyLimit');
             if (input.value.trim() !== "") {
-                penalties.push(input.value.trim());
+                penalties.push({
+                    text: input.value.trim(),
+                    limit: parseInt(limitSelect.value)
+                });
                 input.value = "";
+                limitSelect.value = "-1";
                 renderWheelAndList();
             }
         }
@@ -372,16 +401,12 @@
             if (isSpinning || penalties.length === 0) return;
             isSpinning = true;
             
-            // 真正隨機選一個
             const sliceAngle = 360 / penalties.length;
             const targetIndex = Math.floor(Math.random() * penalties.length);
+            const winner = penalties[targetIndex];
             
-            // 為了讓指針停在色塊中間，加入微小偏移
             const randomOffset = sliceAngle * (Math.random() * 0.6 + 0.2); 
-            // 計算目標角度 (減法是因為指針在上面，輪盤順時針轉)
             const targetAngle = 360 - (targetIndex * sliceAngle) - randomOffset;
-
-            // 加上 5 圈的基礎旋轉，確保動畫有速度感
             const spinSpins = 5 * 360;
             const currentRotationRemainder = currentRotation % 360;
             const additionalRotation = spinSpins + targetAngle - currentRotationRemainder;
@@ -389,11 +414,26 @@
             currentRotation += additionalRotation;
             wheel.style.transform = `rotate(${currentRotation}deg)`;
 
-            // 等待動畫 4 秒結束後顯示結果
+            // 動畫結束後處理
             setTimeout(() => {
                 isSpinning = false;
-                document.getElementById('modalResultText').innerText = "🔥 命中：\n\n" + penalties[targetIndex];
+                let limitMsg = winner.limit === -1 ? "" : `\n(剩餘次數: ${winner.limit - 1})`;
+                document.getElementById('modalResultText').innerText = "🔥 命中：\n\n" + winner.text + limitMsg;
                 document.getElementById('resultModal').classList.add('show');
+
+                // 處理次數扣除
+                if (winner.limit > 0) {
+                    winner.limit--;
+                    if (winner.limit === 0) {
+                        if (penalties.length > 2) {
+                            penalties.splice(targetIndex, 1); // 次數耗盡，刪除選項
+                        } else {
+                            winner.limit = -1; // 為了維持輪盤運作，最後兩個強制變為無限次
+                            setTimeout(() => { alert(`「${winner.text}」已達次數上限，但為了維持輪盤運作，已轉為無限次！`); }, 500);
+                        }
+                    }
+                    renderWheelAndList();
+                }
             }, 4000);
         }
 
@@ -401,9 +441,7 @@
             document.getElementById('resultModal').classList.remove('show');
         }
 
-        // 初始渲染輪盤
         renderWheelAndList();
-
     </script>
 </body>
 </html>
