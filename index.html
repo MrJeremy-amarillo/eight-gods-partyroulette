@@ -43,22 +43,28 @@
 
         /* 卡片設計 */
         .card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .card h2 { margin-top: 0; margin-bottom: 15px; font-size: 22px; }
+        .card h2, .card h3 { margin-top: 0; margin-bottom: 15px; }
 
         /* 分組名單區塊 */
         .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .name-grid input { margin-bottom: 0; font-size: 15px; text-align: center; }
         
         .result-box { margin-top: 20px; }
-        .group-card { background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; }
-        .group-card h3 { margin: 0 0 10px 0; color: var(--primary); }
+        .group-card { background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; animation: fadeIn 0.5s ease;}
+        .group-card h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 18px;}
         .group-card span { display: inline-block; background: white; padding: 5px 12px; border-radius: 20px; border: 1px solid #ddd; margin: 0 5px 5px 0; font-weight: 500;}
 
         /* 暗箱設定面板 */
         #secretPanel { background: #333; color: white; border-radius: 12px; padding: 15px; margin-top: 15px; display: none; text-align: left; animation: fadeIn 0.3s ease; }
         #secretPanel h3 { margin-top: 0; color: #ffcc00; font-size: 16px; }
-        .secret-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .secret-options label { font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .secret-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .secret-options label { font-size: 14px; display: flex; align-items: center; gap: 5px; cursor: pointer;}
+        
+        /* 表單控制列 (Radio 與小數值輸入) */
+        .control-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-size: 14px;}
+        .control-row label { display: flex; align-items: center; gap: 4px; cursor: pointer;}
+        .mini-input { padding: 6px 10px !important; width: 60px !important; margin: 0 !important; font-size: 14px !important; text-align: center;}
+        .mini-select { padding: 6px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; background: #fff;}
 
         /* --- 圓形輪盤專用樣式 --- */
         .wheel-container { position: relative; width: 280px; height: 280px; margin: 30px auto; }
@@ -80,24 +86,26 @@
         
         /* 懲罰清單樣式 */
         .penalty-list { text-align: left; margin-top: 20px; }
-        .penalty-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
-        .delete-btn { background: #ffebee; color: var(--danger); border: none; padding: 8px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; flex-shrink: 0;}
+        .penalty-item { display: flex; flex-direction: column; gap: 10px; background: white; padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border: 1px solid #eee;}
+        .penalty-item-top { display: flex; align-items: center; width: 100%; }
+        .penalty-item-bottom { display: flex; justify-content: space-between; align-items: center; padding-left: 28px; width: 100%; }
+        .delete-btn { background: #ffebee; color: var(--danger); border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; flex-shrink: 0;}
         
         /* 直接編輯清單的輸入框 */
-        .edit-penalty-input { border: none !important; background: transparent !important; font-size: 15px !important; width: 100%; margin: 0 8px !important; padding: 4px 0 !important; border-bottom: 1px dashed #ccc !important; outline: none; border-radius: 0 !important; font-weight: 500;}
+        .edit-penalty-input { border: none !important; background: transparent !important; font-size: 16px !important; width: 100%; margin: 0 8px !important; padding: 4px 0 !important; border-bottom: 1px dashed #ccc !important; outline: none; border-radius: 0 !important; font-weight: bold; color: var(--text-main);}
         .edit-penalty-input:focus { border-bottom: 1px solid var(--primary) !important; }
-        .edit-limit-select { padding: 4px; border-radius: 6px; border: 1px solid #ddd; margin-right: 8px; font-size: 13px; background: #fff; flex-shrink: 0;}
 
-        /* 彈出結果視窗 */
+        /* 彈出視窗 */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: 0.3s; }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 80%; text-align: center; transform: scale(0.8); transition: 0.3s; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 85%; max-width: 400px; text-align: center; transform: scale(0.8); transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .modal.show { display: flex; opacity: 1; }
         .modal.show .modal-content { transform: scale(1); }
-        .modal-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: var(--danger); white-space: pre-line;}
+        .modal-title { font-size: 22px; font-weight: bold; margin-bottom: 20px; color: var(--text-main); white-space: pre-line; line-height: 1.4;}
     </style>
 </head>
 <body>
 
+    <!-- 頂部分頁 -->
     <div class="tab-container">
         <div class="tab active" onclick="switchTab('grouping')">分組抽籤</div>
         <div class="tab" onclick="switchTab('penalty')">懲罰輪盤</div>
@@ -115,11 +123,10 @@
 
         <div class="card" id="step2" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                <h3 id="secretTrigger" style="margin:0; user-select: none;">好友分組產生器</h3>
-                <button onclick="resetSetup()" style="background:none; border:none; color:var(--primary); font-size:14px; padding: 5px;">重新設定人數</button>
+                <h3 id="secretTrigger" style="margin:0; user-select: none; cursor:pointer;">編輯名單</h3>
+                <button onclick="resetSetup()" style="background:none; border:none; color:var(--primary); font-size:14px; padding: 5px; cursor:pointer;">重新設定</button>
             </div>
             
-            <!-- 名單輸入區 -->
             <div id="nameInputsContainer" class="name-grid"></div>
             
             <div style="margin-top:20px; border-top: 1px solid #eee; padding-top:15px;">
@@ -130,9 +137,18 @@
 
             <!-- 暗箱設定區 -->
             <div id="secretPanel">
-                <h3>🤫 壽星保護機制</h3>
-                <p style="font-size:12px; margin:0 0 10px 0; color:#ccc;">勾選的位置保證會被分在【第一組】</p>
+                <h3>🤫 緣分保護機制</h3>
+                <p style="font-size:12px; margin:0 0 15px 0; color:#ccc;">勾選的人保證會被分在同一組</p>
                 <div id="secretCheckboxes" class="secret-options"></div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #555;">
+                    <p style="margin:0 0 8px 0; color:#eee; font-size:13px;">暗箱持續次數：</p>
+                    <div class="control-row" style="color: #fff;">
+                        <label><input type="radio" name="secretLimitType" value="-1" checked onchange="toggleSecretLimit()"> 無限次</label>
+                        <label><input type="radio" name="secretLimitType" value="custom" onchange="toggleSecretLimit()"> 自訂</label>
+                        <input type="number" id="secretLimitValue" placeholder="1" min="1" class="mini-input" style="display:none;">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -152,27 +168,25 @@
         </div>
 
         <div class="card">
-            <h3 style="margin-top:0; text-align:left;">設定懲罰選項</h3>
+            <h3 style="text-align:left;">設定懲罰選項</h3>
             
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="newPenalty" placeholder="輸入新選項..." style="flex:1;">
-                <select id="newPenaltyLimit" style="padding: 12px 5px; border-radius: 10px; border: 1px solid #ddd; background: #fff;">
-                    <option value="-1">無限次</option>
-                    <option value="1">1 次</option>
-                    <option value="2">2 次</option>
-                    <option value="3">3 次</option>
-                    <option value="5">5 次</option>
-                </select>
-                <button class="btn" style="margin-top:0; width:70px; padding: 12px 10px;" onclick="addPenalty()">新增</button>
+            <!-- 新增選項區塊 -->
+            <div style="display:flex; gap:8px; margin-bottom: 10px;">
+                <input type="text" id="newPenalty" placeholder="輸入新選項..." style="flex:1; margin:0;">
+                <button class="btn" style="margin:0; width:70px; padding: 12px 10px;" onclick="addPenalty()">新增</button>
+            </div>
+            <div class="control-row">
+                <label><input type="radio" name="addLimitType" value="-1" checked onchange="toggleAddLimit()"> 無限次</label>
+                <label><input type="radio" name="addLimitType" value="custom" onchange="toggleAddLimit()"> 自訂</label>
+                <input type="number" id="addLimitValue" placeholder="1" min="1" class="mini-input" style="display:none;">
             </div>
             
-            <div class="penalty-list" id="penaltyList">
-                <!-- 動態顯示懲罰清單 -->
-            </div>
+            <!-- 動態顯示懲罰清單 -->
+            <div class="penalty-list" id="penaltyList"></div>
         </div>
     </div>
 
-    <!-- 彈出視窗 -->
+    <!-- 彈出視窗 (Modal) 取代 alert -->
     <div class="modal" id="resultModal">
         <div class="modal-content">
             <div class="modal-title" id="modalResultText"></div>
@@ -181,7 +195,6 @@
     </div>
 
     <script>
-        /* ================= 系統共用邏輯 ================= */
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
@@ -189,11 +202,18 @@
             document.getElementById(tabId).classList.add('active');
         }
 
-        /* ================= 分組抽籤邏輯 ================= */
+        function showMessage(msg) {
+            document.getElementById('modalResultText').innerText = msg;
+            document.getElementById('resultModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('show');
+        }
+
         let clickCount = 0;
         let clickTimer;
-        // 追蹤「被勾選的輸入框索引」，這樣使用者改名字也不會影響暗箱綁定
-        let secretIndices = new Set(); 
+        let secretIndices = new Set(); // 追蹤被勾選的輸入框索引 (不管名字怎麼改，只認位置)
         
         document.getElementById('secretTrigger').addEventListener('click', () => {
             clickCount++;
@@ -214,11 +234,11 @@
 
         function generateNameInputs() {
             const count = parseInt(document.getElementById('peopleCount').value);
-            if (!count || count < 2) { alert("人數至少要 2 人喔！"); return; }
+            if (!count || count < 2) { showMessage("人數至少要 2 人喔！"); return; }
             
             const container = document.getElementById('nameInputsContainer');
             container.innerHTML = '';
-            secretIndices.clear(); // 重新設定人數時清空暗箱綁定
+            secretIndices.clear(); // 重新設定時清空暗箱綁定
             
             const defaultNames = ["阿明", "小華", "阿榮", "小傑", "婷婷", "玲玲", "小胖", "美美"];
             for (let i = 0; i < count; i++) {
@@ -259,9 +279,14 @@
             else secretIndices.delete(index);
         }
 
+        function toggleSecretLimit() {
+            const type = document.querySelector('input[name="secretLimitType"]:checked').value;
+            document.getElementById('secretLimitValue').style.display = type === 'custom' ? 'inline-block' : 'none';
+        }
+
         function executeGrouping() {
             const inputs = document.querySelectorAll('.member-name');
-            // 將每個人綁定他們的 index 索引，以核對暗箱
+            // 每個人綁定 index 以核對暗箱
             let allNames = Array.from(inputs).map((input, idx) => ({ 
                 name: input.value.trim() || `成員 ${idx+1}`, 
                 index: idx 
@@ -269,19 +294,38 @@
             
             const numGroups = parseInt(document.getElementById('groupCount').value);
             if (numGroups < 2 || numGroups > allNames.length) {
-                alert("組數設定錯誤！"); return;
+                showMessage("組數設定錯誤！"); return;
             }
 
             let groups = Array.from({length: numGroups}, () => []);
+            
+            // 檢查暗箱次數限制
+            let isRigged = false;
+            if (secretIndices.size > 0) {
+                const limitType = document.querySelector('input[name="secretLimitType"]:checked').value;
+                if (limitType === '-1') {
+                    isRigged = true;
+                } else {
+                    let valInput = document.getElementById('secretLimitValue');
+                    let val = valInput.value === "" ? 1 : parseInt(valInput.value);
+                    if (!isNaN(val) && val > 0) {
+                        isRigged = true;
+                        valInput.value = val - 1; // 消耗一次
+                        if (val - 1 === 0) {
+                            // 為了明顯，若歸零自動取消自訂按鈕（或仍保留但下次無效）
+                        }
+                    }
+                }
+            }
 
             // 1. 暗箱：處理被勾選的索引
-            if (secretIndices.size > 0) {
+            if (isRigged) {
                 allNames.forEach(item => {
                     if (secretIndices.has(item.index)) {
                         groups[0].push(item.name);
                     }
                 });
-                // 把已經分到第一組的人從名單中剔除
+                // 從總名單中剔除已被暗箱的人
                 allNames = allNames.filter(item => !secretIndices.has(item.index));
             }
 
@@ -299,7 +343,13 @@
                 groups[minGroupIndex].push(item.name);
             });
 
-            // 4. 繪製結果
+            // 4. 洗牌防起疑心 (Deep Shuffle)
+            // 打亂每組內部的名單排序，讓暗箱的人不會總是排在第一個
+            groups.forEach(g => g.sort(() => 0.5 - Math.random()));
+            // 打亂整體的組別順序，讓暗箱的人不會總是「第 1 組」
+            groups.sort(() => 0.5 - Math.random());
+
+            // 5. 繪製結果
             const resultBox = document.getElementById('groupResult');
             resultBox.innerHTML = '';
             const colors = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30'];
@@ -316,15 +366,13 @@
             setTimeout(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }, 100);
         }
 
-        /* ================= 懲罰輪盤邏輯 ================= */
-        // 選項包含 text 和 limit (-1 代表無限次)
         let penalties = [
             {text: "喝一杯", limit: -1}, 
             {text: "彈額頭", limit: -1}, 
             {text: "真心話", limit: -1},
             {text: "請客", limit: 1}
         ];
-        const colors = ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#8338EC', '#FF9F1C'];
+        const wheelColors = ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#8338EC', '#FF9F1C'];
         
         const wheel = document.getElementById('wheel');
         let currentRotation = 0;
@@ -335,19 +383,27 @@
             listEl.innerHTML = '';
             
             penalties.forEach((item, index) => {
-                const limitText = item.limit === -1 ? '無限' : `${item.limit}次`;
+                const limitDisplay = item.limit === -1 ? 'none' : 'inline-block';
+                const limitValue = item.limit === -1 ? '' : item.limit;
+                
                 listEl.innerHTML += `
                     <div class="penalty-item">
-                        <span style="color:${colors[index % colors.length]}; font-size:20px; flex-shrink: 0;">●</span>
-                        <input type="text" class="edit-penalty-input" value="${item.text}" onchange="editPenaltyText(${index}, this.value)">
-                        <select onchange="editPenaltyLimit(${index}, this.value)" class="edit-limit-select">
-                            <option value="-1" ${item.limit === -1 ? 'selected' : ''}>無限</option>
-                            <option value="1" ${item.limit === 1 ? 'selected' : ''}>1次</option>
-                            <option value="2" ${item.limit === 2 ? 'selected' : ''}>2次</option>
-                            <option value="3" ${item.limit === 3 ? 'selected' : ''}>3次</option>
-                            <option value="5" ${item.limit === 5 ? 'selected' : ''}>5次</option>
-                        </select>
-                        <button class="delete-btn" onclick="removePenalty(${index})">刪除</button>
+                        <div class="penalty-item-top">
+                            <span style="color:${wheelColors[index % wheelColors.length]}; font-size:20px; flex-shrink: 0; margin-right:8px;">●</span>
+                            <input type="text" class="edit-penalty-input" value="${item.text}" onchange="editPenaltyText(${index}, this.value)">
+                        </div>
+                        <div class="penalty-item-bottom">
+                            <div style="display:flex; gap: 5px; align-items:center;">
+                                <select onchange="changeLimitType(${index}, this.value)" class="mini-select">
+                                    <option value="-1" ${item.limit === -1 ? 'selected' : ''}>無限次</option>
+                                    <option value="custom" ${item.limit !== -1 ? 'selected' : ''}>自訂次數</option>
+                                </select>
+                                <input type="number" class="mini-input" style="display:${limitDisplay};" 
+                                       value="${limitValue}" placeholder="1" min="1" 
+                                       onchange="changeLimitValue(${index}, this.value)">
+                            </div>
+                            <button class="delete-btn" onclick="removePenalty(${index})">刪除</button>
+                        </div>
                     </div>
                 `;
             });
@@ -362,36 +418,66 @@
             for (let i = 0; i < penalties.length; i++) {
                 const startAngle = i * sliceAngle;
                 const endAngle = (i + 1) * sliceAngle;
-                gradientParts.push(`${colors[i % colors.length]} ${startAngle}deg ${endAngle}deg`);
+                gradientParts.push(`${wheelColors[i % wheelColors.length]} ${startAngle}deg ${endAngle}deg`);
             }
             wheel.style.background = `conic-gradient(${gradientParts.join(', ')})`;
         }
 
-        // 編輯文字與次數
         function editPenaltyText(index, newText) {
             if (newText.trim() !== "") penalties[index].text = newText.trim();
+            renderWheelAndList();
         }
-        function editPenaltyLimit(index, newLimit) {
-            penalties[index].limit = parseInt(newLimit);
+        
+        function changeLimitType(index, type) {
+            if (type === '-1') {
+                penalties[index].limit = -1;
+            } else {
+                penalties[index].limit = 1; // 切換到自訂時，聰明預設為 1
+            }
+            renderWheelAndList();
+        }
+
+        function changeLimitValue(index, val) {
+            let num = parseInt(val);
+            penalties[index].limit = (isNaN(num) || num < 1) ? 1 : num; // 空或亂填都防呆為 1
+            renderWheelAndList();
+        }
+
+        function toggleAddLimit() {
+            const type = document.querySelector('input[name="addLimitType"]:checked').value;
+            document.getElementById('addLimitValue').style.display = type === 'custom' ? 'inline-block' : 'none';
         }
 
         function addPenalty() {
             const input = document.getElementById('newPenalty');
-            const limitSelect = document.getElementById('newPenaltyLimit');
+            const type = document.querySelector('input[name="addLimitType"]:checked').value;
+            const valInput = document.getElementById('addLimitValue');
+            
             if (input.value.trim() !== "") {
+                let limit = -1;
+                if (type === 'custom') {
+                    limit = valInput.value === "" ? 1 : parseInt(valInput.value);
+                    if (isNaN(limit) || limit < 1) limit = 1;
+                }
+                
                 penalties.push({
                     text: input.value.trim(),
-                    limit: parseInt(limitSelect.value)
+                    limit: limit
                 });
+                
+                // 重設輸入區
                 input.value = "";
-                limitSelect.value = "-1";
+                valInput.value = "";
+                document.querySelector('input[name="addLimitType"][value="-1"]').checked = true;
+                toggleAddLimit();
+                
                 renderWheelAndList();
             }
         }
 
         function removePenalty(index) {
             if (penalties.length <= 2) {
-                alert("至少要保留兩個選項才能轉啊！"); return;
+                showMessage("至少要保留兩個選項才能轉啊！"); return;
             }
             penalties.splice(index, 1);
             renderWheelAndList();
@@ -417,28 +503,23 @@
             // 動畫結束後處理
             setTimeout(() => {
                 isSpinning = false;
-                let limitMsg = winner.limit === -1 ? "" : `\n(剩餘次數: ${winner.limit - 1})`;
-                document.getElementById('modalResultText').innerText = "🔥 命中：\n\n" + winner.text + limitMsg;
-                document.getElementById('resultModal').classList.add('show');
+                let limitMsg = winner.limit === -1 ? "" : `\n\n(此選項剩餘次數: ${winner.limit - 1})`;
+                showMessage("🔥 抽取結果：\n\n【 " + winner.text + " 】" + limitMsg);
 
                 // 處理次數扣除
                 if (winner.limit > 0) {
                     winner.limit--;
                     if (winner.limit === 0) {
                         if (penalties.length > 2) {
-                            penalties.splice(targetIndex, 1); // 次數耗盡，刪除選項
+                            penalties.splice(targetIndex, 1); // 刪除選項
                         } else {
-                            winner.limit = -1; // 為了維持輪盤運作，最後兩個強制變為無限次
-                            setTimeout(() => { alert(`「${winner.text}」已達次數上限，但為了維持輪盤運作，已轉為無限次！`); }, 500);
+                            winner.limit = -1; // 強制變無限
+                            setTimeout(() => { showMessage(`「${winner.text}」次數已耗盡。\n但為了維持輪盤運作，已轉為無限次！`); }, 800);
                         }
                     }
                     renderWheelAndList();
                 }
             }, 4000);
-        }
-
-        function closeModal() {
-            document.getElementById('resultModal').classList.remove('show');
         }
 
         renderWheelAndList();
