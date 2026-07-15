@@ -84,6 +84,25 @@
             width: 60px; height: 60px; background: white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5;
         }
         
+        /* 輪盤文字標籤 */
+        .wheel-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0 50%; /* 以左側垂直中心為旋轉軸 */
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.6); /* 增加陰影讓文字在任何顏色上都清晰 */
+            font-size: 16px;
+            white-space: nowrap;
+            pointer-events: none; /* 防止干擾點擊 */
+            width: 90px; /* 限制寬度，避免字超出輪盤邊緣 */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+            z-index: 2;
+        }
+
         /* 懲罰清單樣式 */
         .penalty-list { text-align: left; margin-top: 20px; }
         .penalty-item { display: flex; flex-direction: column; gap: 10px; background: white; padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border: 1px solid #eee;}
@@ -343,71 +362,8 @@
                 groups[minGroupIndex].push(item.name);
             });
 
-            // 4. 洗牌防起疑心 (Deep Shuffle)
-            // 打亂每組內部的名單排序，讓暗箱的人不會總是排在第一個
-            groups.forEach(g => g.sort(() => 0.5 - Math.random()));
-            // 打亂整體的組別順序，讓暗箱的人不會總是「第 1 組」
-            groups.sort(() => 0.5 - Math.random());
-
-            // 5. 繪製結果
-            const resultBox = document.getElementById('groupResult');
-            resultBox.innerHTML = '';
-            const colors = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30'];
-
-            groups.forEach((group, index) => {
-                const color = colors[index % colors.length];
-                let html = `<div class="group-card" style="border-left: 5px solid ${color}">
-                                <h3 style="color:${color}">第 ${index + 1} 組 (${group.length}人)</h3>`;
-                group.forEach(member => { html += `<span>${member}</span>`; });
-                html += `</div>`;
-                resultBox.innerHTML += html;
-            });
-            
-            setTimeout(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }, 100);
-        }
-
-        let penalties = [
-            {text: "喝一杯", limit: -1}, 
-            {text: "彈額頭", limit: -1}, 
-            {text: "真心話", limit: -1},
-            {text: "請客", limit: 1}
-        ];
-        const wheelColors = ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#8338EC', '#FF9F1C'];
-        
-        const wheel = document.getElementById('wheel');
-        let currentRotation = 0;
-        let isSpinning = false;
-
-        function renderWheelAndList() {
-            const listEl = document.getElementById('penaltyList');
-            listEl.innerHTML = '';
-            
-            penalties.forEach((item, index) => {
-                const limitDisplay = item.limit === -1 ? 'none' : 'inline-block';
-                const limitValue = item.limit === -1 ? '' : item.limit;
-                
-                listEl.innerHTML += `
-                    <div class="penalty-item">
-                        <div class="penalty-item-top">
-                            <span style="color:${wheelColors[index % wheelColors.length]}; font-size:20px; flex-shrink: 0; margin-right:8px;">●</span>
-                            <input type="text" class="edit-penalty-input" value="${item.text}" onchange="editPenaltyText(${index}, this.value)">
-                        </div>
-                        <div class="penalty-item-bottom">
-                            <div style="display:flex; gap: 5px; align-items:center;">
-                                <select onchange="changeLimitType(${index}, this.value)" class="mini-select">
-                                    <option value="-1" ${item.limit === -1 ? 'selected' : ''}>無限次</option>
-                                    <option value="custom" ${item.limit !== -1 ? 'selected' : ''}>自訂次數</option>
-                                </select>
-                                <input type="number" class="mini-input" style="display:${limitDisplay};" 
-                                       value="${limitValue}" placeholder="1" min="1" 
-                                       onchange="changeLimitValue(${index}, this.value)">
-                            </div>
-                            <button class="delete-btn" onclick="removePenalty(${index})">刪除</button>
-                        </div>
-                    </div>
-                `;
-            });
-
+            // 繪製圓形輪盤 (使用 CSS conic-gradient) 與文字
+            wheel.innerHTML = ''; // 清空輪盤內先前的文字
             if (penalties.length === 0) {
                 wheel.style.background = '#ddd';
                 return;
@@ -415,10 +371,25 @@
 
             const sliceAngle = 360 / penalties.length;
             let gradientParts = [];
+            
             for (let i = 0; i < penalties.length; i++) {
+                // 1. 處理扇形顏色背景
                 const startAngle = i * sliceAngle;
                 const endAngle = (i + 1) * sliceAngle;
                 gradientParts.push(`${wheelColors[i % wheelColors.length]} ${startAngle}deg ${endAngle}deg`);
+                
+                // 2. 處理扇形內的文字
+                const textEl = document.createElement('div');
+                textEl.className = 'wheel-text';
+                textEl.innerText = penalties[i].text;
+                
+                // conic-gradient 是從上方(12點鐘)開始算 0 度，但 CSS rotate 是從右方(3點鐘)開始算
+                // 因此減去 90 度來對齊，再加上半個扇形角度讓字對準色塊正中間
+                const textAngle = startAngle + (sliceAngle / 2) - 90;
+                
+                // translateX(45px) 讓文字往外推，避開中心白色的圓軸
+                textEl.style.transform = `translateY(-50%) rotate(${textAngle}deg) translateX(45px)`;
+                wheel.appendChild(textEl);
             }
             wheel.style.background = `conic-gradient(${gradientParts.join(', ')})`;
         }
