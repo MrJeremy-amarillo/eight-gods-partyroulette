@@ -39,7 +39,9 @@
         
         input[type="number"], input[type="text"] { 
             padding: 12px 15px; width: 100%; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; margin-bottom: 10px; background: #fff;
+            outline: none;
         }
+        input[type="number"]:focus, input[type="text"]:focus { border-color: var(--primary); }
 
         /* 卡片設計 */
         .card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
@@ -64,7 +66,7 @@
         .control-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-size: 14px;}
         .control-row label { display: flex; align-items: center; gap: 4px; cursor: pointer;}
         .mini-input { padding: 6px 10px !important; width: 60px !important; margin: 0 !important; font-size: 14px !important; text-align: center;}
-        .mini-select { padding: 6px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; background: #fff;}
+        .mini-select { padding: 6px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; background: #fff; outline: none;}
 
         /* --- 圓形輪盤專用樣式 --- */
         .wheel-container { position: relative; width: 280px; height: 280px; margin: 30px auto; }
@@ -78,6 +80,8 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             transition: transform 4s cubic-bezier(0.17, 0.67, 0.1, 1);
             transform: rotate(0deg);
+            position: relative;
+            overflow: hidden;
         }
         .wheel-center {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -92,11 +96,11 @@
             transform-origin: 0 50%; /* 以左側垂直中心為旋轉軸 */
             font-weight: bold;
             color: white;
-            text-shadow: 1px 1px 4px rgba(0,0,0,0.6); /* 增加陰影讓文字在任何顏色上都清晰 */
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
             font-size: 16px;
             white-space: nowrap;
-            pointer-events: none; /* 防止干擾點擊 */
-            width: 90px; /* 限制寬度，避免字超出輪盤邊緣 */
+            pointer-events: none;
+            width: 90px;
             overflow: hidden;
             text-overflow: ellipsis;
             text-align: left;
@@ -109,9 +113,7 @@
         .penalty-item-top { display: flex; align-items: center; width: 100%; }
         .penalty-item-bottom { display: flex; justify-content: space-between; align-items: center; padding-left: 28px; width: 100%; }
         .delete-btn { background: #ffebee; color: var(--danger); border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; flex-shrink: 0;}
-        
-        /* 直接編輯清單的輸入框 */
-        .edit-penalty-input { border: none !important; background: transparent !important; font-size: 16px !important; width: 100%; margin: 0 8px !important; padding: 4px 0 !important; border-bottom: 1px dashed #ccc !important; outline: none; border-radius: 0 !important; font-weight: bold; color: var(--text-main);}
+        .edit-penalty-input { border: none !important; background: transparent !important; font-size: 16px !important; width: 100%; margin: 0 8px !important; padding: 4px 0 !important; border-bottom: 1px dashed #ccc !important; border-radius: 0 !important; font-weight: bold; color: var(--text-main);}
         .edit-penalty-input:focus { border-bottom: 1px solid var(--primary) !important; }
 
         /* 彈出視窗 */
@@ -142,7 +144,8 @@
 
         <div class="card" id="step2" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                <h3 id="secretTrigger" style="margin:0; user-select: none; cursor:pointer;">編輯名單</h3>
+                <!-- 暗箱觸發器：對這裡連點三下 -->
+                <h3 id="secretTrigger" style="margin:0; user-select: none; cursor:pointer;">好友分組產生器</h3>
                 <button onclick="resetSetup()" style="background:none; border:none; color:var(--primary); font-size:14px; padding: 5px; cursor:pointer;">重新設定</button>
             </div>
             
@@ -188,8 +191,6 @@
 
         <div class="card">
             <h3 style="text-align:left;">設定懲罰選項</h3>
-            
-            <!-- 新增選項區塊 -->
             <div style="display:flex; gap:8px; margin-bottom: 10px;">
                 <input type="text" id="newPenalty" placeholder="輸入新選項..." style="flex:1; margin:0;">
                 <button class="btn" style="margin:0; width:70px; padding: 12px 10px;" onclick="addPenalty()">新增</button>
@@ -200,12 +201,11 @@
                 <input type="number" id="addLimitValue" placeholder="1" min="1" class="mini-input" style="display:none;">
             </div>
             
-            <!-- 動態顯示懲罰清單 -->
             <div class="penalty-list" id="penaltyList"></div>
         </div>
     </div>
 
-    <!-- 彈出視窗 (Modal) 取代 alert -->
+    <!-- 彈出視窗 -->
     <div class="modal" id="resultModal">
         <div class="modal-content">
             <div class="modal-title" id="modalResultText"></div>
@@ -214,6 +214,13 @@
     </div>
 
     <script>
+        /* ================= 全局共用變數與函式 ================= */
+        const colors = ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#8338EC', '#FF9F1C'];
+        const wheel = document.getElementById('wheel');
+        let currentRotation = 0;
+        let isSpinning = false;
+        let secretIndices = new Set(); 
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
@@ -230,9 +237,9 @@
             document.getElementById('resultModal').classList.remove('show');
         }
 
+        /* ================= 分組抽籤邏輯 ================= */
         let clickCount = 0;
         let clickTimer;
-        let secretIndices = new Set(); // 追蹤被勾選的輸入框索引 (不管名字怎麼改，只認位置)
         
         document.getElementById('secretTrigger').addEventListener('click', () => {
             clickCount++;
@@ -257,7 +264,7 @@
             
             const container = document.getElementById('nameInputsContainer');
             container.innerHTML = '';
-            secretIndices.clear(); // 重新設定時清空暗箱綁定
+            secretIndices.clear(); // 清空暗箱綁定
             
             const defaultNames = ["阿明", "小華", "阿榮", "小傑", "婷婷", "玲玲", "小胖", "美美"];
             for (let i = 0; i < count; i++) {
@@ -305,7 +312,6 @@
 
         function executeGrouping() {
             const inputs = document.querySelectorAll('.member-name');
-            // 每個人綁定 index 以核對暗箱
             let allNames = Array.from(inputs).map((input, idx) => ({ 
                 name: input.value.trim() || `成員 ${idx+1}`, 
                 index: idx 
@@ -329,29 +335,24 @@
                     let val = valInput.value === "" ? 1 : parseInt(valInput.value);
                     if (!isNaN(val) && val > 0) {
                         isRigged = true;
-                        valInput.value = val - 1; // 消耗一次
-                        if (val - 1 === 0) {
-                            // 為了明顯，若歸零自動取消自訂按鈕（或仍保留但下次無效）
-                        }
+                        valInput.value = val - 1; 
                     }
                 }
             }
 
-            // 1. 暗箱：處理被勾選的索引
             if (isRigged) {
                 allNames.forEach(item => {
                     if (secretIndices.has(item.index)) {
                         groups[0].push(item.name);
                     }
                 });
-                // 從總名單中剔除已被暗箱的人
                 allNames = allNames.filter(item => !secretIndices.has(item.index));
             }
 
-            // 2. 隨機打亂剩下的人
+            // 隨機打亂剩下的人
             allNames.sort(() => 0.5 - Math.random());
 
-            // 3. 將剩下的人平均分配到人數最少的組別
+            // 均分到各組
             allNames.forEach(item => {
                 let minGroupIndex = 0;
                 for(let i = 1; i < numGroups; i++) {
@@ -362,8 +363,77 @@
                 groups[minGroupIndex].push(item.name);
             });
 
-            // 繪製圓形輪盤 (使用 CSS conic-gradient) 與文字
-            wheel.innerHTML = ''; // 清空輪盤內先前的文字
+            // 深度洗牌防起疑：把每組裡面的人名順序打亂，然後再把組別順序打亂
+            groups.forEach(group => group.sort(() => 0.5 - Math.random()));
+            groups.sort(() => 0.5 - Math.random());
+
+            // 繪製結果 UI
+            const resultBox = document.getElementById('groupResult');
+            resultBox.innerHTML = '';
+            const themeColors = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30'];
+
+            groups.forEach((group, index) => {
+                const color = themeColors[index % themeColors.length];
+                let html = `<div class="group-card" style="border-left: 5px solid ${color}">
+                                <h3 style="color:${color}">第 ${index + 1} 組 (${group.length}人)</h3>`;
+                group.forEach(member => { html += `<span>${member}</span>`; });
+                html += `</div>`;
+                resultBox.innerHTML += html;
+            });
+            
+            setTimeout(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }, 100);
+        }
+
+        /* ================= 懲罰輪盤邏輯 ================= */
+        
+        let penalties = [
+            { text: "喝一杯", limit: -1 },
+            { text: "大冒險", limit: -1 },
+            { text: "彈額頭", limit: -1 },
+            { text: "真心話", limit: -1 }
+        ];
+
+        function renderWheelAndList() {
+            const listEl = document.getElementById('penaltyList');
+            listEl.innerHTML = '';
+            
+            penalties.forEach((item, index) => {
+                let limitHtml = '';
+                if (item.limit === -1) {
+                    limitHtml = `
+                        <div class="control-row" style="margin-bottom:0; justify-content: flex-end;">
+                            <select class="mini-select" onchange="changeLimitType(${index}, this.value)">
+                                <option value="-1" selected>無限次</option>
+                                <option value="custom">自訂</option>
+                            </select>
+                        </div>`;
+                } else {
+                    limitHtml = `
+                        <div class="control-row" style="margin-bottom:0; justify-content: flex-end;">
+                            <select class="mini-select" onchange="changeLimitType(${index}, this.value)">
+                                <option value="-1">無限次</option>
+                                <option value="custom" selected>限制</option>
+                            </select>
+                            <input type="number" class="mini-input" value="${item.limit}" min="1" onchange="changeLimitValue(${index}, this.value)">
+                        </div>`;
+                }
+
+                listEl.innerHTML += `
+                    <div class="penalty-item">
+                        <div class="penalty-item-top">
+                            <span style="color:${colors[index % colors.length]}; font-size:20px; margin-right:5px;">●</span>
+                            <input type="text" class="edit-penalty-input" value="${item.text}" onchange="editPenaltyText(${index}, this.value)">
+                        </div>
+                        <div class="penalty-item-bottom">
+                            ${limitHtml}
+                            <button class="delete-btn" onclick="removePenalty(${index})">刪除</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 繪製圓形輪盤 (包含文字)
+            wheel.innerHTML = ''; 
             if (penalties.length === 0) {
                 wheel.style.background = '#ddd';
                 return;
@@ -373,21 +443,18 @@
             let gradientParts = [];
             
             for (let i = 0; i < penalties.length; i++) {
-                // 1. 處理扇形顏色背景
+                const color = colors[i % colors.length];
                 const startAngle = i * sliceAngle;
                 const endAngle = (i + 1) * sliceAngle;
-                gradientParts.push(`${wheelColors[i % wheelColors.length]} ${startAngle}deg ${endAngle}deg`);
+                gradientParts.push(`${color} ${startAngle}deg ${endAngle}deg`);
                 
-                // 2. 處理扇形內的文字
+                // 動態加上文字標籤
                 const textEl = document.createElement('div');
                 textEl.className = 'wheel-text';
                 textEl.innerText = penalties[i].text;
                 
-                // conic-gradient 是從上方(12點鐘)開始算 0 度，但 CSS rotate 是從右方(3點鐘)開始算
-                // 因此減去 90 度來對齊，再加上半個扇形角度讓字對準色塊正中間
+                // 計算文字位置角度
                 const textAngle = startAngle + (sliceAngle / 2) - 90;
-                
-                // translateX(45px) 讓文字往外推，避開中心白色的圓軸
                 textEl.style.transform = `translateY(-50%) rotate(${textAngle}deg) translateX(45px)`;
                 wheel.appendChild(textEl);
             }
@@ -403,14 +470,14 @@
             if (type === '-1') {
                 penalties[index].limit = -1;
             } else {
-                penalties[index].limit = 1; // 切換到自訂時，聰明預設為 1
+                penalties[index].limit = 1; 
             }
             renderWheelAndList();
         }
 
         function changeLimitValue(index, val) {
             let num = parseInt(val);
-            penalties[index].limit = (isNaN(num) || num < 1) ? 1 : num; // 空或亂填都防呆為 1
+            penalties[index].limit = (isNaN(num) || num < 1) ? 1 : num; 
             renderWheelAndList();
         }
 
@@ -436,7 +503,6 @@
                     limit: limit
                 });
                 
-                // 重設輸入區
                 input.value = "";
                 valInput.value = "";
                 document.querySelector('input[name="addLimitType"][value="-1"]').checked = true;
@@ -471,7 +537,6 @@
             currentRotation += additionalRotation;
             wheel.style.transform = `rotate(${currentRotation}deg)`;
 
-            // 動畫結束後處理
             setTimeout(() => {
                 isSpinning = false;
                 let limitMsg = winner.limit === -1 ? "" : `\n\n(此選項剩餘次數: ${winner.limit - 1})`;
@@ -482,9 +547,9 @@
                     winner.limit--;
                     if (winner.limit === 0) {
                         if (penalties.length > 2) {
-                            penalties.splice(targetIndex, 1); // 刪除選項
+                            penalties.splice(targetIndex, 1); 
                         } else {
-                            winner.limit = -1; // 強制變無限
+                            winner.limit = -1; 
                             setTimeout(() => { showMessage(`「${winner.text}」次數已耗盡。\n但為了維持輪盤運作，已轉為無限次！`); }, 800);
                         }
                     }
@@ -493,7 +558,9 @@
             }, 4000);
         }
 
+        // 啟動！
         renderWheelAndList();
+
     </script>
 </body>
 </html>
