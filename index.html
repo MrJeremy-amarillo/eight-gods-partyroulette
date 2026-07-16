@@ -153,7 +153,7 @@
             
             <div style="margin-top:20px; border-top: 1px solid #eee; padding-top:15px;">
                 <p style="margin:0 0 10px 0; text-align:left; font-weight:bold;">要分成幾組？</p>
-                <input type="number" id="groupCount" value="2" min="2">
+                <input type="number" id="groupCount" value="2" min="2" onchange="saveGroupingState()">
                 <button class="btn" onclick="executeGrouping()">🎲 開始隨機分組</button>
             </div>
 
@@ -166,9 +166,9 @@
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #555;">
                     <p style="margin:0 0 8px 0; color:#eee; font-size:13px;">暗箱持續次數：</p>
                     <div class="control-row" style="color: #fff;">
-                        <label><input type="radio" name="secretLimitType" value="-1" checked onchange="toggleSecretLimit()"> 無限次</label>
-                        <label><input type="radio" name="secretLimitType" value="custom" onchange="toggleSecretLimit()"> 自訂</label>
-                        <input type="number" id="secretLimitValue" placeholder="1" min="1" class="mini-input" style="display:none;">
+                        <label><input type="radio" name="secretLimitType" value="-1" checked onchange="toggleSecretLimit(); saveGroupingState()"> 無限次</label>
+                        <label><input type="radio" name="secretLimitType" value="custom" onchange="toggleSecretLimit(); saveGroupingState()"> 自訂</label>
+                        <input type="number" id="secretLimitValue" placeholder="1" min="1" class="mini-input" style="display:none;" onchange="saveGroupingState()">
                     </div>
                 </div>
             </div>
@@ -269,19 +269,23 @@
             const defaultNames = ["阿明", "小華", "阿榮", "小傑", "婷婷", "玲玲", "小胖", "美美"];
             for (let i = 0; i < count; i++) {
                 let defaultName = (i < defaultNames.length) ? defaultNames[i] : `成員 ${i+1}`;
-                container.innerHTML += `<input type="text" class="member-name" value="${defaultName}">`;
+                container.innerHTML += `<input type="text" class="member-name" value="${defaultName}" onchange="saveGroupingState()">`;
             }
             
             document.getElementById('step1').style.display = 'none';
             document.getElementById('step2').style.display = 'block';
             document.getElementById('groupResult').innerHTML = '';
             document.getElementById('secretPanel').style.display = 'none';
+            
+            saveGroupingState();
         }
 
         function resetSetup() {
             document.getElementById('step2').style.display = 'none';
             document.getElementById('step1').style.display = 'block';
             document.getElementById('groupResult').innerHTML = '';
+            localStorage.removeItem('partyRouletteGrouping');
+            secretIndices.clear();
         }
 
         function updateSecretCheckboxes() {
@@ -303,6 +307,7 @@
         function toggleSecret(index, isChecked) {
             if(isChecked) secretIndices.add(index);
             else secretIndices.delete(index);
+            saveGroupingState();
         }
 
         function toggleSecretLimit() {
@@ -336,6 +341,17 @@
                     if (!isNaN(val) && val > 0) {
                         isRigged = true;
                         valInput.value = val - 1; 
+                        
+                        // 若次數耗盡，切回正常模式
+                        if (val - 1 === 0) {
+                            setTimeout(() => {
+                                document.querySelector('input[name="secretLimitType"][value="-1"]').checked = true;
+                                secretIndices.clear();
+                                toggleSecretLimit();
+                                saveGroupingState();
+                                showMessage("暗箱次數已耗盡，已自動切換回正常隨機模式！");
+                            }, 800);
+                        }
                     }
                 }
             }
@@ -381,7 +397,58 @@
                 resultBox.innerHTML += html;
             });
             
+            saveGroupingState();
             setTimeout(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }, 100);
+        }
+
+        /* ================= 分組抽籤記憶功能 ================= */
+        function saveGroupingState() {
+            const nameInputs = document.querySelectorAll('.member-name');
+            let currentNames = [];
+            if (nameInputs.length > 0) {
+                currentNames = Array.from(nameInputs).map(input => input.value);
+            }
+            
+            const limitRadio = document.querySelector('input[name="secretLimitType"]:checked');
+            
+            const groupSettings = {
+                names: currentNames,
+                groupCount: document.getElementById('groupCount').value || 2,
+                secretIndices: Array.from(secretIndices),
+                secretLimitType: limitRadio ? limitRadio.value : '-1',
+                secretLimitValue: document.getElementById('secretLimitValue').value || 1
+            };
+            
+            localStorage.setItem('partyRouletteGrouping', JSON.stringify(groupSettings));
+        }
+
+        function loadGroupingSettings() {
+            const saved = localStorage.getItem('partyRouletteGrouping');
+            if (saved) {
+                try {
+                    const groupSettings = JSON.parse(saved);
+                    if (groupSettings.names && groupSettings.names.length > 0) {
+                        document.getElementById('step1').style.display = 'none';
+                        document.getElementById('step2').style.display = 'block';
+                        
+                        document.getElementById('peopleCount').value = groupSettings.names.length;
+                        document.getElementById('groupCount').value = groupSettings.groupCount;
+                        
+                        const container = document.getElementById('nameInputsContainer');
+                        container.innerHTML = '';
+                        groupSettings.names.forEach(name => {
+                            container.innerHTML += `<input type="text" class="member-name" value="${name}" onchange="saveGroupingState()">`;
+                        });
+
+                        secretIndices = new Set(groupSettings.secretIndices || []);
+                        
+                        const type = groupSettings.secretLimitType || '-1';
+                        document.querySelector(`input[name="secretLimitType"][value="${type}"]`).checked = true;
+                        document.getElementById('secretLimitValue').value = groupSettings.secretLimitValue || 1;
+                        toggleSecretLimit();
+                    }
+                } catch(e) {}
+            }
         }
 
         /* ================= 懲罰輪盤邏輯 ================= */
@@ -585,6 +652,7 @@
         // 啟動！
         loadPenalties(); // 啟動前先讀取手機裡的記憶
         renderWheelAndList();
+        loadGroupingSettings(); // 載入分組名單記憶
 
     </script>
 </body>
