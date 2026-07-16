@@ -1,4 +1,139 @@
-<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>派對輪盤</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --primary: #007aff;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-sub: #666666;
+            --danger: #ff3b30;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; padding: 0; background-color: var(--bg); text-align: center; color: var(--text-main);
+        }
+
+        /* 頂部分頁標籤 */
+        .tab-container { display: flex; background: var(--card-bg); box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100;}
+        .tab { flex: 1; padding: 18px 0; font-size: 16px; font-weight: 600; color: var(--text-sub); cursor: pointer; transition: 0.3s; }
+        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        
+        .content { display: none; padding: 20px; padding-bottom: 50px; }
+        .content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 通用按鈕與輸入框 */
+        .btn { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-size: 16px; font-weight: bold; width: 100%; margin-top: 15px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: 0.2s; cursor: pointer;}
+        .btn:active { transform: scale(0.96); }
+        .btn-danger { background: var(--danger); box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); }
+        
+        input[type="number"], input[type="text"] { 
+            padding: 12px 15px; width: 100%; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; margin-bottom: 10px; background: #fff;
+        }
+
+        /* 卡片設計 */
+        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card h2 { margin-top: 0; margin-bottom: 15px; font-size: 22px; }
+
+        /* 分組名單區塊 */
+        .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .name-grid input { margin-bottom: 0; font-size: 15px; text-align: center; }
+        
+        .result-box { margin-top: 20px; }
+        .group-card { background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; animation: fadeIn 0.5s ease;}
+        .group-card h3 { margin: 0 0 10px 0; color: var(--primary); }
+        .group-card span { display: inline-block; background: white; padding: 5px 12px; border-radius: 20px; border: 1px solid #ddd; margin: 0 5px 5px 0; font-weight: 500;}
+
+        /* 暗箱設定面板 */
+        #secretPanel { background: #333; color: white; border-radius: 12px; padding: 15px; margin-top: 15px; display: none; text-align: left; animation: fadeIn 0.3s ease; }
+        #secretPanel h3 { margin-top: 0; color: #ffcc00; font-size: 16px; }
+        .secret-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .secret-options label { font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .control-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+        .mini-input { width: 60px !important; padding: 6px !important; margin: 0 !important; text-align: center;}
+
+        /* --- 圓形輪盤專用樣式 --- */
+        .wheel-container { position: relative; width: 280px; height: 280px; margin: 30px auto; }
+        .pointer {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 35px solid var(--danger);
+            z-index: 10; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.3));
+        }
+        .wheel {
+            width: 100%; height: 100%; border-radius: 50%; border: 4px solid white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.1, 1); 
+            transform: rotate(0deg);
+            position: relative;
+            overflow: hidden;
+        }
+        .wheel-center {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 50px; height: 50px; background: white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5;
+        }
+        .wheel-text-overlay {
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none;
+        }
+        .wheel-text {
+            position: absolute; top: 50%; left: 50%;
+            transform-origin: 0 0; color: white; font-weight: bold; font-size: 15px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* 懲罰清單樣式 */
+        .penalty-list { text-align: left; margin-top: 20px; }
+        .penalty-item { background: white; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 8px;}
+        .penalty-item-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .penalty-item-bottom { display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-size: 13px; color: #666; }
+        .delete-btn { background: #ffebee; color: var(--danger); border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .edit-input { border: 1px solid transparent; background: transparent; font-size: 16px; padding: 4px; width: 100%; margin: 0;}
+        .edit-input:focus { border-bottom: 1px solid var(--primary); outline: none; }
+
+        /* 彈出結果視窗 */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: 0.3s; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 80%; text-align: center; transform: scale(0.8); transition: 0.3s; }
+        .modal.show { display: flex; opacity: 1; }
+        .modal.show .modal-content { transform: scale(1); }
+        .modal-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: var(--danger); }
+    </style>
+</head>
+<body>
+
+    <div class="tab-container">
+        <div class="tab active" onclick="switchTab('grouping')">分組抽籤</div>
+        <div class="tab" onclick="switchTab('penalty')">懲罰輪盤</div>
+    </div>
+
+    <!-- ================= 分頁一：分組抽籤 ================= -->
+    <div id="grouping" class="content active">
+        
+        <div class="card" id="step1">
+            <h2 id="groupTitle">好友分組產生器</h2>
+            <p style="color:var(--text-sub); font-size:14px;">請先輸入這次參與的總人數</p>
+            <input type="number" id="peopleCount" placeholder="例如：8" pattern="[0-9]*">
+            <button class="btn" onclick="generateNameInputs()">建立名單</button>
+        </div>
+
+        <div class="card" id="step2" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <!-- 加了 user-select: none 防止連點時反白 -->
+                <h3 id="secretTrigger" style="margin:0; user-select: none; cursor: pointer;">好友分組產生器</h3>
+                <button onclick="resetSetup()" style="background:none; border:none; color:var(--primary); font-size:14px; cursor: pointer;">重新設定人數</button>
+            </div>
+            
+            <div id="nameInputsContainer" class="name-grid"></div>
+            
             <div style="margin-top:20px; border-top: 1px solid #eee; padding-top:15px;">
                 <p style="margin:0 0 10px 0; text-align:left; font-weight:bold;">要分成幾組？</p>
                 <input type="number" id="groupCount" value="2" min="2" onchange="saveGroupingState()">
@@ -8,7 +143,7 @@
             <!-- 暗箱設定區 -->
             <div id="secretPanel">
                 <h3>🤫 緣分保護機制</h3>
-                <p style="font-size:12px; margin:0 0 15px 0; color:#ccc;">勾選的人保證會被分在同一組</p>
+                <p style="font-size:12px; margin:0 0 15px 0; color:#ccc;">勾選的人保證會被分在同一組 (且會深度打亂防起疑)</p>
                 <div id="secretCheckboxes" class="secret-options"></div>
                 
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #555;">
@@ -21,7 +156,83 @@
                 </div>
             </div>
         </div>
-<!-- ... existing code ... -->
+
+        <div id="groupResult" class="result-box"></div>
+    </div>
+
+    <!-- ================= 分頁二：懲罰輪盤 ================= -->
+    <div id="penalty" class="content">
+        <div class="card">
+            <h2>命運懲罰輪盤</h2>
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <div class="wheel-center"></div>
+                <div class="wheel" id="wheel">
+                    <div class="wheel-text-overlay" id="wheelTextOverlay"></div>
+                </div>
+            </div>
+            <button class="btn btn-danger" onclick="spinWheel()" id="spinBtn">開始旋轉！</button>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0; text-align:left;">設定懲罰選項</h3>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="newPenalty" placeholder="輸入新選項...">
+                <button class="btn" style="margin-top:0; width:80px; padding: 12px 10px;" onclick="addPenalty()">新增</button>
+            </div>
+            <div class="penalty-list" id="penaltyList"></div>
+        </div>
+    </div>
+
+    <!-- 彈出視窗 (統一取代 alert) -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalResultText"></div>
+            <button class="btn" onclick="closeModal()">確認</button>
+        </div>
+    </div>
+
+    <script>
+        /* ================= 系統共用邏輯 ================= */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function showMessage(msg) {
+            document.getElementById('modalResultText').innerText = msg;
+            document.getElementById('resultModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('show');
+        }
+
+        /* ================= 分組抽籤邏輯 ================= */
+        let clickCount = 0;
+        let clickTimer;
+        let secretIndices = new Set(); // 記錄被勾選的輸入框索引
+        
+        // 對大標題連點3次開啟暗箱
+        document.getElementById('secretTrigger').addEventListener('click', () => {
+            clickCount++;
+            clearTimeout(clickTimer);
+            if (clickCount >= 3) {
+                const panel = document.getElementById('secretPanel');
+                if (panel.style.display === 'block') {
+                    panel.style.display = 'none';
+                } else {
+                    updateSecretCheckboxes();
+                    panel.style.display = 'block';
+                }
+                clickCount = 0;
+            } else {
+                clickTimer = setTimeout(() => { clickCount = 0; }, 800);
+            }
+        });
+
         function generateNameInputs() {
             const count = parseInt(document.getElementById('peopleCount').value);
             if (!count || count < 2) { showMessage("人數至少要 2 人喔！"); return; }
@@ -30,7 +241,7 @@
             container.innerHTML = '';
             secretIndices.clear(); // 清空暗箱綁定
             
-            const defaultNames = ["阿明", "小華", "阿榮", "小傑", "婷婷", "玲玲", "小胖", "美美"];
+            const defaultNames = ["阿明", "小華", "阿榮", "小傑", "婷婷", "玲ocols玲", "小胖", "美美"];
             for (let i = 0; i < count; i++) {
                 let defaultName = (i < defaultNames.length) ? defaultNames[i] : `成員 ${i+1}`;
                 container.innerHTML += `<input type="text" class="member-name" value="${defaultName}" onchange="saveGroupingState()">`;
@@ -53,7 +264,21 @@
         }
 
         function updateSecretCheckboxes() {
-// ... existing code ...
+            const inputs = document.querySelectorAll('.member-name');
+            const container = document.getElementById('secretCheckboxes');
+            container.innerHTML = '';
+            
+            inputs.forEach((input, index) => {
+                const name = input.value.trim() || `成員 ${index+1}`;
+                const isChecked = secretIndices.has(index) ? 'checked' : '';
+                container.innerHTML += `
+                    <label>
+                        <input type="checkbox" onchange="toggleSecret(${index}, this.checked)" ${isChecked}> ${name}
+                    </label>
+                `;
+            });
+        }
+
         function toggleSecret(index, isChecked) {
             if(isChecked) secretIndices.add(index);
             else secretIndices.delete(index);
@@ -61,7 +286,26 @@
         }
 
         function toggleSecretLimit() {
-// ... existing code ...
+            const limitType = document.querySelector('input[name="secretLimitType"]:checked').value;
+            const limitInput = document.getElementById('secretLimitValue');
+            if (limitType === 'custom') {
+                limitInput.style.display = 'inline-block';
+            } else {
+                limitInput.style.display = 'none';
+            }
+        }
+
+        function executeGrouping() {
+            const inputs = document.querySelectorAll('.member-name');
+            let allNames = Array.from(inputs).map((input, idx) => input.value.trim() || `成員 ${idx+1}`);
+            const numGroups = parseInt(document.getElementById('groupCount').value);
+            
+            if (numGroups < 2 || numGroups > allNames.length) {
+                showMessage("組數設定錯誤！"); return;
+            }
+
+            let isRigged = false;
+            // 處理暗箱次數邏輯
             if (secretIndices.size > 0) {
                 const limitType = document.querySelector('input[name="secretLimitType"]:checked').value;
                 if (limitType === '-1') {
@@ -73,7 +317,7 @@
                         isRigged = true;
                         valInput.value = val - 1; 
                         
-                        // 若次數耗盡，切回正常模式
+                        // 若次數耗盡，神不知鬼不覺切回正常模式
                         if (val - 1 === 0) {
                             setTimeout(() => {
                                 document.querySelector('input[name="secretLimitType"][value="-1"]').checked = true;
@@ -86,8 +330,50 @@
                 }
             }
 
+            let groups = Array.from({length: numGroups}, () => []);
+
             if (isRigged) {
-// ... existing code ...
+                // 將暗箱的成員抓出來放入第一組
+                Array.from(secretIndices).forEach(index => {
+                    if (inputs[index]) {
+                        const riggedName = inputs[index].value.trim() || `成員 ${index+1}`;
+                        groups[0].push(riggedName);
+                        // 從總名單剔除
+                        allNames = allNames.filter(n => n !== riggedName);
+                    }
+                });
+            }
+
+            // 隨機打亂剩下的人
+            allNames.sort(() => 0.5 - Math.random());
+
+            // 將剩下的人平均分配到人數最少的組別
+            allNames.forEach(name => {
+                let minGroupIndex = 0;
+                for(let i = 1; i < numGroups; i++) {
+                    if (groups[i].length < groups[minGroupIndex].length) {
+                        minGroupIndex = i;
+                    }
+                }
+                groups[minGroupIndex].push(name);
+            });
+
+            // 深度防起疑機制：打亂每一組內部的名單順序
+            groups.forEach(group => group.sort(() => 0.5 - Math.random()));
+            
+            // 深度防起疑機制：打亂「組別」本身的順序，這樣暗箱的人不一定在「第 1 組」
+            groups.sort(() => 0.5 - Math.random());
+
+            // 繪製結果
+            const resultBox = document.getElementById('groupResult');
+            resultBox.innerHTML = '';
+            const colors = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30'];
+
+            groups.forEach((group, index) => {
+                const color = colors[index % colors.length];
+                let html = `<div class="group-card" style="border-left: 5px solid ${color}">
+                                <h3 style="color:${color}">第 ${index + 1} 組 (${group.length}人)</h3>`;
+                group.forEach(member => { html += `<span>${member}</span>`; });
                 html += `</div>`;
                 resultBox.innerHTML += html;
             });
@@ -96,16 +382,14 @@
             setTimeout(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }, 100);
         }
 
-        /* ================= 分組抽籤記憶功能 ================= */
+        /* ================= 分組儲存與讀取 ================= */
         function saveGroupingState() {
             const nameInputs = document.querySelectorAll('.member-name');
             let currentNames = [];
             if (nameInputs.length > 0) {
                 currentNames = Array.from(nameInputs).map(input => input.value);
             }
-            
             const limitRadio = document.querySelector('input[name="secretLimitType"]:checked');
-            
             const groupSettings = {
                 names: currentNames,
                 groupCount: document.getElementById('groupCount').value || 2,
@@ -113,7 +397,6 @@
                 secretLimitType: limitRadio ? limitRadio.value : '-1',
                 secretLimitValue: document.getElementById('secretLimitValue').value || 1
             };
-            
             localStorage.setItem('partyRouletteGrouping', JSON.stringify(groupSettings));
         }
 
@@ -125,7 +408,6 @@
                     if (groupSettings.names && groupSettings.names.length > 0) {
                         document.getElementById('step1').style.display = 'none';
                         document.getElementById('step2').style.display = 'block';
-                        
                         document.getElementById('peopleCount').value = groupSettings.names.length;
                         document.getElementById('groupCount').value = groupSettings.groupCount;
                         
@@ -136,7 +418,6 @@
                         });
 
                         secretIndices = new Set(groupSettings.secretIndices || []);
-                        
                         const type = groupSettings.secretLimitType || '-1';
                         document.querySelector(`input[name="secretLimitType"][value="${type}"]`).checked = true;
                         document.getElementById('secretLimitValue').value = groupSettings.secretLimitValue || 1;
@@ -147,15 +428,189 @@
         }
 
         /* ================= 懲罰輪盤邏輯 ================= */
-        
         const DEFAULT_PENALTIES = [
-// ... existing code ...
+            { text: "喝一杯", limitType: "-1", limitValue: 1 },
+            { text: "彈額頭", limitType: "-1", limitValue: 1 },
+            { text: "真心話", limitType: "-1", limitValue: 1 },
+            { text: "請客", limitType: "custom", limitValue: 1 }
+        ];
+        
+        let penalties = [];
+        const penaltyColors = ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#8338EC', '#FF9F1C'];
+        const wheel = document.getElementById('wheel');
+        const wheelTextOverlay = document.getElementById('wheelTextOverlay');
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        function loadPenalties() {
+            const saved = localStorage.getItem('partyRoulettePenalties');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // 相容舊版本純字串陣列
+                    penalties = parsed.map(p => {
+                        if (typeof p === 'string') return { text: p, limitType: '-1', limitValue: 1 };
+                        return p;
+                    });
+                } catch (e) {
+                    penalties = JSON.parse(JSON.stringify(DEFAULT_PENALTIES));
+                }
+            } else {
+                penalties = JSON.parse(JSON.stringify(DEFAULT_PENALTIES));
+            }
+        }
+
+        function savePenalties() {
+            localStorage.setItem('partyRoulettePenalties', JSON.stringify(penalties));
+        }
+
+        function renderWheelAndList() {
+            // 繪製下方清單
+            const listEl = document.getElementById('penaltyList');
+            listEl.innerHTML = '';
+            
+            penalties.forEach((item, index) => {
+                const isCustom = item.limitType === 'custom';
+                listEl.innerHTML += `
+                    <div class="penalty-item" style="border-left: 5px solid ${penaltyColors[index % penaltyColors.length]}">
+                        <div class="penalty-item-top">
+                            <input type="text" class="edit-input" value="${item.text}" onchange="editPenaltyText(${index}, this.value)">
+                            <button class="delete-btn" onclick="removePenalty(${index})">刪除</button>
+                        </div>
+                        <div class="penalty-item-bottom">
+                            次數：
+                            <label><input type="radio" name="limit_${index}" value="-1" ${!isCustom ? 'checked' : ''} onchange="editPenaltyLimitType(${index}, '-1')"> 無限次</label>
+                            <label><input type="radio" name="limit_${index}" value="custom" ${isCustom ? 'checked' : ''} onchange="editPenaltyLimitType(${index}, 'custom')"> 自訂</label>
+                            <input type="number" class="mini-input" style="display: ${isCustom ? 'inline-block' : 'none'};" value="${item.limitValue}" min="1" onchange="editPenaltyLimitValue(${index}, this.value)">
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 繪製圓形輪盤底色
+            if (penalties.length === 0) {
+                wheel.style.background = '#ddd';
+                wheelTextOverlay.innerHTML = '';
+                savePenalties();
+                return;
+            }
+
+            const sliceAngle = 360 / penalties.length;
+            let gradientParts = [];
+            for (let i = 0; i < penalties.length; i++) {
+                const startAngle = i * sliceAngle;
+                const endAngle = (i + 1) * sliceAngle;
+                gradientParts.push(`${penaltyColors[i % penaltyColors.length]} ${startAngle}deg ${endAngle}deg`);
+            }
+            wheel.style.background = `conic-gradient(${gradientParts.join(', ')})`;
+
+            // 繪製輪盤上的文字 (防溢出放射狀排列)
+            wheelTextOverlay.innerHTML = '';
+            for (let i = 0; i < penalties.length; i++) {
+                const textAngle = i * sliceAngle + (sliceAngle / 2);
+                const textDiv = document.createElement('div');
+                textDiv.className = 'wheel-text';
+                // 調整位移與旋轉角度，讓文字從中心往外射出
+                textDiv.style.transform = `rotate(${textAngle - 90}deg) translateX(45px) translateY(-50%)`;
+                textDiv.innerText = penalties[i].text;
+                wheelTextOverlay.appendChild(textDiv);
+            }
+
+            savePenalties();
+        }
+
+        // 修改文字
+        function editPenaltyText(index, newText) {
+            if(newText.trim() !== "") {
+                penalties[index].text = newText.trim();
+                renderWheelAndList();
+            }
+        }
+
+        // 切換次數類型
+        function editPenaltyLimitType(index, type) {
+            penalties[index].limitType = type;
+            renderWheelAndList();
+        }
+
+        // 修改次數數值 (防呆：不填或亂填皆預設為 1)
+        function editPenaltyLimitValue(index, val) {
+            let num = parseInt(val);
+            if(isNaN(num) || num < 1) num = 1;
+            penalties[index].limitValue = num;
+            renderWheelAndList();
+        }
+
+        function addPenalty() {
+            const input = document.getElementById('newPenalty');
+            if (input.value.trim() !== "") {
+                penalties.push({
+                    text: input.value.trim(),
+                    limitType: "-1",
+                    limitValue: 1
+                });
+                input.value = "";
+                renderWheelAndList();
+            }
+        }
+
+        function removePenalty(index) {
+            if (penalties.length <= 2) {
+                showMessage("至少要保留兩個選項才能轉啊！"); return;
+            }
+            penalties.splice(index, 1);
+            renderWheelAndList();
+        }
+
         function spinWheel() {
-// ... existing code ...
-        // 啟動！
-        loadPenalties(); // 啟動前先讀取手機裡的記憶
-        renderWheelAndList();
-        loadGroupingSettings(); // 載入分組名單記憶
+            if (isSpinning || penalties.length === 0) return;
+            isSpinning = true;
+            
+            const sliceAngle = 360 / penalties.length;
+            const targetIndex = Math.floor(Math.random() * penalties.length);
+            
+            const randomOffset = sliceAngle * (Math.random() * 0.6 + 0.2); 
+            const targetAngle = 360 - (targetIndex * sliceAngle) - randomOffset;
+
+            const spinSpins = 5 * 360;
+            const currentRotationRemainder = currentRotation % 360;
+            const additionalRotation = spinSpins + targetAngle - currentRotationRemainder;
+            
+            currentRotation += additionalRotation;
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                const resultItem = penalties[targetIndex];
+                let msg = `🔥 命中：\n\n【 ${resultItem.text} 】`;
+
+                // 處理次數扣減
+                if (resultItem.limitType === 'custom') {
+                    resultItem.limitValue -= 1;
+                    if (resultItem.limitValue <= 0) {
+                        msg += "\n\n(此選項次數已用盡，即將從輪盤移除)";
+                        if (penalties.length <= 2) {
+                            msg += "\n⚠️ 由於只剩兩個選項，最後一個選項將自動轉為無限次！";
+                            resultItem.limitType = '-1';
+                            resultItem.limitValue = 1;
+                        } else {
+                            // 刪除用盡的選項
+                            penalties.splice(targetIndex, 1);
+                        }
+                    }
+                }
+                
+                renderWheelAndList(); // 更新畫面與存檔
+                showMessage(msg);
+            }, 4000);
+        }
+
+        // 網頁載入時自動啟動
+        window.onload = function() {
+            loadPenalties();
+            loadGroupingSettings();
+            renderWheelAndList();
+        }
 
     </script>
 </body>
